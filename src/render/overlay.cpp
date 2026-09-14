@@ -12,6 +12,7 @@ static ID3D11Device* device = nullptr;
 static ID3D11DeviceContext* context = nullptr;
 static IDXGISwapChain* swapChain = nullptr;
 static ID3D11RenderTargetView* rtv = nullptr;
+static bool clickThrough = true;
 
 bool Initialize() {
     WNDCLASSEXA wc{};
@@ -67,6 +68,17 @@ void Shutdown() {
     if (context) { context->Release(); context = nullptr; }
     if (device) { device->Release(); device = nullptr; }
     if (hwnd) { DestroyWindow(hwnd); hwnd = nullptr; }
+}
+
+void SetClickThrough(bool enabled) {
+    if (!hwnd || clickThrough == enabled) return;
+    clickThrough = enabled;
+    LONG_PTR ex = GetWindowLongPtrA(hwnd, GWL_EXSTYLE);
+    if (enabled)
+        ex |= WS_EX_TRANSPARENT;
+    else
+        ex &= ~WS_EX_TRANSPARENT;
+    SetWindowLongPtrA(hwnd, GWL_EXSTYLE, ex);
 }
 
 void BeginFrame() {

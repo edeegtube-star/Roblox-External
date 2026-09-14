@@ -3,6 +3,7 @@
 #include <chrono>
 
 #include "memory/memory.h"
+#include "sdk/sdk.h"
 #include "features/aimbot.h"
 #include "features/esp.h"
 #include "features/triggerbot.h"
@@ -13,12 +14,17 @@
 #include "stealth/selfdestruct.h"
 
 Memory g_Memory;
+SDK::Roblox g_SDK;
 bool g_Running = true;
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     if (!g_Memory.Attach(L"RobloxPlayerBeta.exe")) {
         MessageBoxA(nullptr, "Failed to attach to Roblox", "UberDelivery", MB_ICONERROR);
         return 1;
+    }
+
+    if (!g_SDK.Init(&g_Memory)) {
+        // Still allow run - offsets may need refresh after join
     }
 
     if (!Overlay::Initialize()) {
@@ -45,6 +51,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         if (GetAsyncKeyState(VK_INSERT) & 1) {
             Menu::Toggle();
         }
+
+        // Click-through off while menu open so ImGui receives input
+        Overlay::SetClickThrough(!Menu::IsOpen());
+
+        g_SDK.Refresh();
 
         Aimbot::Update(g_Memory);
         SilentAim::Update(g_Memory);

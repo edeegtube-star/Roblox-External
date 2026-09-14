@@ -4,7 +4,6 @@ project(UberDelivery LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# ImGui sources - clone Dear ImGui into third_party/imgui before building
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/third_party/imgui)
 
 set(IMGUI_SOURCES
@@ -19,6 +18,7 @@ set(IMGUI_SOURCES
 add_executable(UberDelivery WIN32
     src/main.cpp
     src/memory/memory.cpp
+    src/sdk/sdk.cpp
     src/features/aimbot.cpp
     src/features/esp.cpp
     src/features/triggerbot.cpp

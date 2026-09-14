@@ -7,6 +7,7 @@ namespace Overlay {
     void Shutdown();
     void BeginFrame();
     void EndFrame();
+    void SetClickThrough(bool enabled);
     HWND GetHwnd();
     ID3D11Device* GetDevice();
     ID3D11DeviceContext* GetContext();
