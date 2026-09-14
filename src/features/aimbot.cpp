@@ -4,6 +4,7 @@
 #include "esp.h"
 #include <cmath>
 #include <cfloat>
+#include <cstdlib>
 #include <Windows.h>
 
 extern SDK::Roblox g_SDK;
@@ -12,8 +13,7 @@ namespace Aimbot {
 
 static Vector3 PredictPos(const Vector3& pos, const Vector3& vel) {
     if (!settings.prediction) return pos;
-    // Simple constant-velocity prediction; scale is user-tunable
-    float t = 0.05f * settings.predictionScale; // ~50ms base
+    float t = 0.05f * settings.predictionScale;
     return pos + vel * t;
 }
 
@@ -36,7 +36,7 @@ static void MoveMouseToward(float targetX, float targetY, float screenCX, float 
         dy += ((rand() % 5) - 2) * 0.15f;
         break;
     default: // Linear
-        dx *= (1.f / / smooth);
+        dx *= (1.f / smooth);
         dy *= (1.f / smooth);
         break;
     }
