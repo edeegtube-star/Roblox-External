@@ -1,34 +1,62 @@
 #include "triggerbot.h"
+#include "../sdk/offsets.h"
 #include <chrono>
 
 namespace Triggerbot {
 
-static std::chrono::steady_clock::time_point lastShot;
+static std::chrono::steady_clock::time_point lastShot{};
 static bool locked = false;
+static bool shooting = false;
 
 void Update(Memory& mem) {
     if (!settings.enabled) return;
-    if (!(GetAsyncKeyState(settings.key) & 0x8000)) return;
+
+    bool keyDown = (GetAsyncKeyState(settings.key) & 0x8000) != 0;
+
+    if (!keyDown) {
+        if (shooting) {
+            INPUT up{};
+            up.type = INPUT_MOUSE;
+            up.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+            SendInput(1, &up, sizeof(INPUT));
+            shooting = false;
+        }
+        return;
+    }
 
     auto now = std::chrono::steady_clock::now();
 
     if (settings.antiDoubleShot && locked) {
-        // Wait until weapon is ready again (animation / reload finished)
-        // Read weapon state / tool cooldown from memory when offsets available
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastShot).count();
-        if (elapsed < 800) return; // placeholder cooldown
+        // Placeholder: real implementation reads tool cooldown / ammo / animation state
+        if (elapsed < 700) return;
         locked = false;
     }
 
-    // Crosshair target check goes here
-    // If valid enemy under crosshair:
-    //   Sleep(settings.reactionMs);
-    //   mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
-    //   mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-    //   lastShot = now;
-    //   if (settings.antiDoubleShot) locked = true;
+    // Crosshair entity check goes here (GetAimingEntity equivalent for Roblox)
+    bool canShoot = false; // set true when valid enemy under crosshair
+
+    if (canShoot && !shooting) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(settings.reactionMs));
+
+        INPUT down{};
+        down.type = INPUT_MOUSE;
+        down.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+        SendInput(1, &down, sizeof(INPUT));
+
+        shooting = true;
+        lastShot = now;
+        if (settings.antiDoubleShot) locked = true;
+    }
+    else if (shooting && !canShoot) {
+        INPUT up{};
+        up.type = INPUT_MOUSE;
+        up.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+        SendInput(1, &up, sizeof(INPUT));
+        shooting = false;
+    }
 
     (void)mem;
 }
 
-}
+} // namespace Triggerbot
