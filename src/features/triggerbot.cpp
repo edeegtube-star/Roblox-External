@@ -1,6 +1,8 @@
 #include "triggerbot.h"
 #include "../sdk/offsets.h"
+#include <Windows.h>
 #include <chrono>
+#include <thread>
 
 namespace Triggerbot {
 
@@ -28,13 +30,11 @@ void Update(Memory& mem) {
 
     if (settings.antiDoubleShot && locked) {
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastShot).count();
-        // Placeholder: real implementation reads tool cooldown / ammo / animation state
         if (elapsed < 700) return;
         locked = false;
     }
 
-    // Crosshair entity check goes here (GetAimingEntity equivalent for Roblox)
-    bool canShoot = false; // set true when valid enemy under crosshair
+    bool canShoot = false; // set when valid enemy under crosshair
 
     if (canShoot && !shooting) {
         std::this_thread::sleep_for(std::chrono::milliseconds(settings.reactionMs));

@@ -29,9 +29,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     Streamproof::Enable(Overlay::GetHwnd());
 
-    // Menu needs device/context from overlay - expose them next pass if needed
-    // For now Initialize is called with nulls until overlay exposes D3D objects
-    // Menu::Initialize(Overlay::GetHwnd(), device, context);
+    if (!Menu::Initialize(Overlay::GetHwnd(), Overlay::GetDevice(), Overlay::GetContext())) {
+        MessageBoxA(nullptr, "Failed to init ImGui menu", "UberDelivery", MB_ICONERROR);
+        Overlay::Shutdown();
+        g_Memory.Detach();
+        return 1;
+    }
 
     while (g_Running) {
         if (GetAsyncKeyState(VK_END) & 1) {
