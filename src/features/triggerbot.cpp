@@ -1,8 +1,12 @@
 #include "triggerbot.h"
-#include "../sdk/offsets.h"
+#include "../sdk/sdk.h"
+#include "esp.h"
 #include <Windows.h>
 #include <chrono>
 #include <thread>
+#include <cmath>
+
+extern SDK::Roblox g_SDK;
 
 namespace Triggerbot {
 
@@ -34,10 +38,29 @@ void Update(Memory& mem) {
         locked = false;
     }
 
-    bool canShoot = false; // set when valid enemy under crosshair
+    // Crosshair proximity: any enemy screen-pos within ~8px of center
+    float cx = g_SDK.screenW * 0.5f;
+    float cy = g_SDK.screenH * 0.5f;
+    bool canShoot = false;
+
+    for (const auto& p : ESP::players) {
+        if (!p.isValid) continue;
+        if (settings.teamCheck && p.isTeammate) continue;
+
+        Vector3 aim = p.head ? g_SDK.GetPartPosition(p.head) : p.position;
+        Vector2 scr{};
+        if (!g_SDK.WorldToScreen(aim, scr)) continue;
+
+        float d = sqrtf((scr.x - cx) * (scr.x - cx) + (scr.y - cy) * (scr.y - cy));
+        if (d < 8.0f) {
+            canShoot = true;
+            break;
+        }
+    }
 
     if (canShoot && !shooting) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(settings.reactionMs));
+        if (settings.reactionMs > 0)
+            std::this_thread::sleep_for(std::chrono::milliseconds(settings.reactionMs));
 
         INPUT down{};
         down.type = INPUT_MOUSE;
@@ -45,7 +68,7 @@ void Update(Memory& mem) {
         SendInput(1, &down, sizeof(INPUT));
 
         shooting = true;
-        lastShot = now;
+        lastShot = std::chrono::steady_clock::now();
         if (settings.antiDoubleShot) locked = true;
     }
     else if (shooting && !canShoot) {
