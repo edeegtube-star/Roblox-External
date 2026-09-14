@@ -21,9 +21,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         return 1;
     }
 
-    Overlay::Initialize();
+    if (!Overlay::Initialize()) {
+        MessageBoxA(nullptr, "Failed to create overlay", "UberDelivery", MB_ICONERROR);
+        g_Memory.Detach();
+        return 1;
+    }
+
     Streamproof::Enable(Overlay::GetHwnd());
-    Menu::Initialize();
+
+    // Menu needs device/context from overlay - expose them next pass if needed
+    // For now Initialize is called with nulls until overlay exposes D3D objects
+    // Menu::Initialize(Overlay::GetHwnd(), device, context);
 
     while (g_Running) {
         if (GetAsyncKeyState(VK_END) & 1) {
@@ -41,13 +49,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         ESP::Update(g_Memory);
 
         Overlay::BeginFrame();
+
+        Menu::BeginFrame();
         ESP::Render();
         Menu::Render();
+        Menu::EndFrame();
+
         Overlay::EndFrame();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
+    Menu::Shutdown();
     Overlay::Shutdown();
     g_Memory.Detach();
     return 0;
