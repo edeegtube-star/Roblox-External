@@ -1,17 +1,15 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <cmath>
 
 struct Vector3 {
     float x, y, z;
-
     Vector3() : x(0), y(0), z(0) {}
     Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
-
     Vector3 operator+(const Vector3& o) const { return { x + o.x, y + o.y, z + o.z }; }
     Vector3 operator-(const Vector3& o) const { return { x - o.x, y - o.y, z - o.z }; }
     Vector3 operator*(float s) const { return { x * s, y * s, z * s }; }
-
     float Length() const { return sqrtf(x * x + y * y + z * z); }
     Vector3 Normalized() const {
         float len = Length();
@@ -32,11 +30,35 @@ struct PlayerData {
     uintptr_t humanoid = 0;
     uintptr_t rootPart = 0;
     uintptr_t head = 0;
+    uintptr_t torso = 0;
+    uintptr_t leftArm = 0;
+    uintptr_t rightArm = 0;
+    uintptr_t leftLeg = 0;
+    uintptr_t rightLeg = 0;
     std::string name;
+    std::string displayName;
+    std::string toolName;
     float health = 0.f;
-    float maxHealth = 0.f;
+    float maxHealth = 100.f;
     Vector3 position;
     Vector3 velocity;
+    Vector2 screenHead{};
+    Vector2 screenFeet{};
+    Vector2 screenHRP{};
+    float boxW = 0.f;
+    float boxH = 0.f;
+    float distance = 0.f;
+    bool onScreen = false;
     bool isTeammate = false;
+    bool isKnocked = false;
     bool isValid = false;
 };
+
+namespace Globals {
+    inline bool streamproof = true;
+    inline bool vsync = false;
+    inline bool performanceMode = false;
+    inline bool showWatermark = true;
+    inline bool showKeybindList = true;
+    inline int fpsCap = 0;
+}
