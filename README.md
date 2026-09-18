@@ -1,25 +1,40 @@
 # UberDelivery
 
-Advanced Roblox External
+Closet Matcha-style Roblox external (Windows 10/11).
 
 ## Features
 
 ### Combat
-- **Aimbot** — Sensitivity, Smoothing (Linear / Ease / Humanized / Snap), Prediction, multi-hitbox
-- **Silent Aim** — Sensitivity, Prediction, FOV, hitbox select
-- **Triggerbot** — Reaction time (ms), Anti-double-shot lock (single-bullet weapons)
+- Aimbot — FOV, smoothing (Linear/Ease/Humanized), prediction, sticky, hitpart, team/health checks
+- Silent Aim — FOV, prediction, sticky, discrete mouse correction
+- Triggerbot — delay/release, hitbox multiplier, team/visible checks
 
 ### Visuals
-- ESP: 2D Box, 3D Box, Corner Box
-- Team Check, Name, Distance, Skeleton, Health bar
+- Box (normal / corner), fill, outline
+- Healthbar, skeleton, name (username/display), distance, tool
+- Tracers, snaplines, chams
+- Aimbot + Silent FOV circles
+
+### Movement
+- Speed (Velocity / WalkSpeed)
+- Fly
+- Desync toggle (game-dependent)
+- Noclip, inf jump, anti-fling, 360 spin, custom gravity
 
 ### Stealth
-- True Streamproof (`WDA_EXCLUDEFROMCAPTURE` — OBS / Discord / Game Bar)
-- Self-Destruct (trace wipe + process exit)
-- Echo.ac / Detect.ac resistance (usermode external, no inject)
+- Streamproof (`WDA_EXCLUDEFROMCAPTURE`) — OBS / Discord / Game Bar
+- Self-destruct (delayed batch wipe + exit)
+- Click-through overlay when menu closed
+- Minimal strings / fake product name
+
+## Controls
+| Key | Action |
+|-----|--------|
+| INSERT | Toggle menu |
+| END | Self-destruct |
+| Configurable | Aimbot / Silent / Trigger / Movement |
 
 ## Build
-
 ```bash
 mkdir build && cd build
 cmake .. -G "Visual Studio 17 2022" -A x64
@@ -27,42 +42,10 @@ cmake --build . --config Release
 ```
 
 ## Offsets
-
-Live offsets are in `src/sdk/offsets.h`.
-
-Update path:
-1. Use [RbxDumperV2](https://git.imtheo.lol/theo/RbxDumperV2)
-2. Paste new values into `offsets.h`
-3. Rebuild
-
+Update `src/sdk/offsets.h` from RbxDumperV2 after every client update.
 See `tools/README_DUMPER.md`.
 
-## Controls (default)
-
-| Key | Action |
-|-----|--------|
-| INSERT | Toggle menu |
-| END | Self-destruct |
-| RMB | Aimbot hold |
-| Configurable | Silent / Trigger |
-
-## Structure
-
-```
-src/
-  main.cpp
-  memory/
-  sdk/          offsets + structures
-  features/     aimbot, silentaim, triggerbot, esp
-  render/       streamproof overlay
-  menu/
-  stealth/      streamproof + selfdestruct
-tools/
-  README_DUMPER.md
-```
-
-## Status
-
-- Skeleton + offsets + feature shells: **done**
-- Entity list / WorldToScreen / full draw: **next**
-- Silent aim method for your specific game: **needs target experience details**
+## Notes
+- Pure external — no injection into Roblox
+- Offsets go stale; keep them current
+- Server-sided desync is experience-dependent

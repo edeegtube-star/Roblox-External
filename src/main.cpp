@@ -8,35 +8,34 @@
 #include "features/esp.h"
 #include "features/triggerbot.h"
 #include "features/silentaim.h"
+#include "features/movement/movement.h"
 #include "render/overlay.h"
 #include "menu/menu.h"
 #include "stealth/streamproof.h"
 #include "stealth/selfdestruct.h"
+#include "sdk/structures.h"
 
 Memory g_Memory;
 SDK::Roblox g_SDK;
 bool g_Running = true;
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
-    if (!g_Memory.Attach(L"RobloxPlayerBeta.exe")) {
-        MessageBoxA(nullptr, "Failed to attach to Roblox", "UberDelivery", MB_ICONERROR);
-        return 1;
+    while (!g_Memory.Attach(L"RobloxPlayerBeta.exe")) {
+        if (GetAsyncKeyState(VK_END) & 1) return 0;
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
-    if (!g_SDK.Init(&g_Memory)) {
-        // Still allow run - offsets may need refresh after join
-    }
+    g_SDK.Init(&g_Memory);
 
     if (!Overlay::Initialize()) {
-        MessageBoxA(nullptr, "Failed to create overlay", "UberDelivery", MB_ICONERROR);
         g_Memory.Detach();
         return 1;
     }
 
     Streamproof::Enable(Overlay::GetHwnd());
+    Globals::streamproof = true;
 
     if (!Menu::Initialize(Overlay::GetHwnd(), Overlay::GetDevice(), Overlay::GetContext())) {
-        MessageBoxA(nullptr, "Failed to init ImGui menu", "UberDelivery", MB_ICONERROR);
         Overlay::Shutdown();
         g_Memory.Detach();
         return 1;
@@ -48,30 +47,33 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             break;
         }
 
-        if (GetAsyncKeyState(VK_INSERT) & 1) {
+        if (GetAsyncKeyState(VK_INSERT) & 1)
             Menu::Toggle();
-        }
 
-        // Click-through off while menu open so ImGui receives input
         Overlay::SetClickThrough(!Menu::IsOpen());
+
+        if (!g_Memory.process) {
+            g_Memory.Attach(L"RobloxPlayerBeta.exe");
+            if (g_Memory.process) g_SDK.Init(&g_Memory);
+        }
 
         g_SDK.Refresh();
 
+        ESP::Update(g_Memory);
         Aimbot::Update(g_Memory);
         SilentAim::Update(g_Memory);
         Triggerbot::Update(g_Memory);
-        ESP::Update(g_Memory);
+        Movement::Update(g_Memory);
 
         Overlay::BeginFrame();
-
         Menu::BeginFrame();
         ESP::Render();
         Menu::Render();
         Menu::EndFrame();
-
         Overlay::EndFrame();
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        int sleepMs = Globals::performanceMode ? 2 : 1;
+        std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
     }
 
     Menu::Shutdown();

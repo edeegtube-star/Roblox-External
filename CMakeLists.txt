@@ -23,6 +23,7 @@ add_executable(UberDelivery WIN32
     src/features/esp.cpp
     src/features/triggerbot.cpp
     src/features/silentaim.cpp
+    src/features/movement/movement.cpp
     src/render/overlay.cpp
     src/menu/menu.cpp
     src/stealth/streamproof.cpp
@@ -37,6 +38,9 @@ target_include_directories(UberDelivery PRIVATE
 )
 
 if(MSVC)
-    target_compile_options(UberDelivery PRIVATE /W3 /O2 /MT)
+    target_compile_options(UberDelivery PRIVATE /W3 /O2 /MT /GS-)
     target_link_libraries(UberDelivery PRIVATE d3d11 dxgi dwmapi)
+    set_target_properties(UberDelivery PROPERTIES
+        LINK_FLAGS_RELEASE "/DEBUG:NONE /OPT:REF /OPT:ICF"
+    )
 endif()
