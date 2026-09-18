@@ -1,85 +1,77 @@
 #include "triggerbot.h"
 #include "../sdk/sdk.h"
 #include "esp.h"
-#include <Windows.h>
-#include <chrono>
-#include <thread>
 #include <cmath>
+#include <chrono>
+#include <Windows.h>
 
 extern SDK::Roblox g_SDK;
 
 namespace Triggerbot {
 
-static std::chrono::steady_clock::time_point lastShot{};
-static bool locked = false;
-static bool shooting = false;
+static auto lastShot = std::chrono::steady_clock::now();
+static bool mouseDown = false;
 
 void Update(Memory& mem) {
+    (void)mem;
     if (!settings.enabled) return;
 
-    bool keyDown = (GetAsyncKeyState(settings.key) & 0x8000) != 0;
-
-    if (!keyDown) {
-        if (shooting) {
+    bool keyOk = true;
+    if (settings.activationMode == 0 && settings.key != 0)
+        keyOk = (GetAsyncKeyState(settings.key) & 0x8000) != 0;
+    if (!keyOk) {
+        if (mouseDown) {
             INPUT up{};
             up.type = INPUT_MOUSE;
             up.mi.dwFlags = MOUSEEVENTF_LEFTUP;
             SendInput(1, &up, sizeof(INPUT));
-            shooting = false;
+            mouseDown = false;
         }
         return;
     }
 
-    auto now = std::chrono::steady_clock::now();
-
-    if (settings.antiDoubleShot && locked) {
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastShot).count();
-        if (elapsed < 700) return;
-        locked = false;
-    }
-
-    // Crosshair proximity: any enemy screen-pos within ~8px of center
     float cx = g_SDK.screenW * 0.5f;
     float cy = g_SDK.screenH * 0.5f;
-    bool canShoot = false;
+    bool onTarget = false;
 
     for (const auto& p : ESP::players) {
-        if (!p.isValid) continue;
+        if (!p.isValid || !p.onScreen) continue;
         if (settings.teamCheck && p.isTeammate) continue;
+        if (settings.maxDistance > 0.f && p.distance > settings.maxDistance) continue;
 
-        Vector3 aim = p.head ? g_SDK.GetPartPosition(p.head) : p.position;
-        Vector2 scr{};
-        if (!g_SDK.WorldToScreen(aim, scr)) continue;
+        float halfW = (p.boxW * 0.5f) * settings.hitboxMul;
+        float halfH = (p.boxH * 0.5f) * settings.hitboxMul;
+        float left = p.screenHRP.x - halfW;
+        float right = p.screenHRP.x + halfW;
+        float top = p.screenHead.y;
+        float bottom = p.screenFeet.y;
 
-        float d = sqrtf((scr.x - cx) * (scr.x - cx) + (scr.y - cy) * (scr.y - cy));
-        if (d < 8.0f) {
-            canShoot = true;
+        if (cx >= left && cx <= right && cy >= top && cy <= bottom) {
+            onTarget = true;
             break;
         }
     }
 
-    if (canShoot && !shooting) {
-        if (settings.reactionMs > 0)
-            std::this_thread::sleep_for(std::chrono::milliseconds(settings.reactionMs));
-
-        INPUT down{};
-        down.type = INPUT_MOUSE;
-        down.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-        SendInput(1, &down, sizeof(INPUT));
-
-        shooting = true;
-        lastShot = std::chrono::steady_clock::now();
-        if (settings.antiDoubleShot) locked = true;
+    auto now = std::chrono::steady_clock::now();
+    if (onTarget && !mouseDown) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastShot).count();
+        if (ms >= settings.delayMs) {
+            INPUT down{};
+            down.type = INPUT_MOUSE;
+            down.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+            SendInput(1, &down, sizeof(INPUT));
+            mouseDown = true;
+            lastShot = now;
+        }
+    } else if (!onTarget && mouseDown) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastShot).count();
+        if (ms >= settings.releaseMs) {
+            INPUT up{};
+            up.type = INPUT_MOUSE;
+            up.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+            SendInput(1, &up, sizeof(INPUT));
+            mouseDown = false;
+        }
     }
-    else if (shooting && !canShoot) {
-        INPUT up{};
-        up.type = INPUT_MOUSE;
-        up.mi.dwFlags = MOUSEEVENTF_LEFTUP;
-        SendInput(1, &up, sizeof(INPUT));
-        shooting = false;
-    }
-
-    (void)mem;
 }
-
-} // namespace Triggerbot
+}
